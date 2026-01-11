@@ -60,6 +60,8 @@ add_ph_test(test_binding)
 add_ph_test(test_extraction)
 add_ph_test(test_lists)
 add_ph_test(test_interop)
+add_ph_test(test_registers)
+add_ph_test(test_debug)
 
 # Custom target to run tests with verbose output
 add_custom_target(check
@@ -73,4 +75,6 @@ add_custom_target(check
         test_extraction
         test_lists
         test_interop
+        test_registers
+        test_debug
 )

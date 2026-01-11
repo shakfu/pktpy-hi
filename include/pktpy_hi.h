@@ -12,10 +12,24 @@
 #define PK_IS_PUBLIC_INCLUDE
 #include "pocketpy.h"
 #include <stdbool.h>
+#include <assert.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* ============================================================================
+ * 0. Constants and Internal Helpers
+ * ============================================================================
+ */
+
+// Maximum number of registers available (r0-r7)
+#define PH_MAX_REG 8
+
+// Internal: validate register index, returns true if valid
+static inline bool ph__check_reg(int reg) {
+    return reg >= 0 && reg < PH_MAX_REG;
+}
 
 /* ============================================================================
  * 1. Scope Management
@@ -207,22 +221,27 @@ static inline py_GlobalRef ph_bool(bool val) {
 }
 
 // Create into a specific register (0-7)
+// Asserts on invalid register index (programming error)
 static inline py_GlobalRef ph_int_r(int reg, py_i64 val) {
+    assert(ph__check_reg(reg) && "ph_int_r: register index out of bounds [0, PH_MAX_REG)");
     py_newint(py_getreg(reg), val);
     return py_getreg(reg);
 }
 
 static inline py_GlobalRef ph_float_r(int reg, py_f64 val) {
+    assert(ph__check_reg(reg) && "ph_float_r: register index out of bounds [0, PH_MAX_REG)");
     py_newfloat(py_getreg(reg), val);
     return py_getreg(reg);
 }
 
 static inline py_GlobalRef ph_str_r(int reg, const char* val) {
+    assert(ph__check_reg(reg) && "ph_str_r: register index out of bounds [0, PH_MAX_REG)");
     py_newstr(py_getreg(reg), val);
     return py_getreg(reg);
 }
 
 static inline py_GlobalRef ph_bool_r(int reg, bool val) {
+    assert(ph__check_reg(reg) && "ph_bool_r: register index out of bounds [0, PH_MAX_REG)");
     py_newbool(py_getreg(reg), val);
     return py_getreg(reg);
 }
@@ -233,8 +252,8 @@ static inline py_GlobalRef ph_bool_r(int reg, bool val) {
  * Simplified function calling with result structs.
  *
  * Three variants are provided:
- * - ph_call*: Clear exceptions, result in volatile py_retval()
- * - ph_call*_raise: Keep exceptions for propagation
+ * - ph_call*: Print and clear exceptions (like ph_exec), result in volatile py_retval()
+ * - ph_call*_raise: Keep exceptions for propagation (caller must handle)
  * - ph_call*_r: Copy result to specified register (0-7) for stable storage
  *
  * WARNING: The base ph_call* variants return py_retval() which is overwritten
@@ -257,13 +276,13 @@ static inline ph_Result ph_call0(const char* func_name) {
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
     r.ok = py_call(fn, 0, NULL);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -277,13 +296,13 @@ static inline ph_Result ph_call1(const char* func_name, py_Ref arg0) {
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
     r.ok = py_call(fn, 1, arg0);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -297,13 +316,13 @@ static inline ph_Result ph_call2(const char* func_name, py_Ref args) {
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
     r.ok = py_call(fn, 2, args);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -317,13 +336,13 @@ static inline ph_Result ph_call3(const char* func_name, py_Ref args) {
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
     r.ok = py_call(fn, 3, args);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -336,7 +355,7 @@ static inline ph_Result ph_call(py_Ref callable, int argc, py_Ref argv) {
     ph_Scope scope = ph_scope_begin();
     r.ok = py_call(callable, argc, argv);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -351,13 +370,13 @@ static inline ph_Result ph_callmethod0(py_Ref obj, const char* method_name) {
     if (!py_pushmethod(py_name(method_name))) {
         py_pop();
         py_exception(tp_AttributeError, "object has no method '%s'", method_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
     r.ok = py_vectorcall(0, 0);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -372,14 +391,14 @@ static inline ph_Result ph_callmethod1(py_Ref obj, const char* method_name, py_R
     if (!py_pushmethod(py_name(method_name))) {
         py_pop();
         py_exception(tp_AttributeError, "object has no method '%s'", method_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
     py_push(arg0);
     r.ok = py_vectorcall(1, 0);
     if (r.ok) r.val = py_retval();
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -522,6 +541,7 @@ static inline ph_Result ph_callmethod1_raise(py_Ref obj, const char* method_name
 }
 
 // --- Register-backed variants (result copied to stable register) ---
+// All _r variants validate register index and return ok=false if invalid.
 
 // Call a global function, copy result to register
 static inline ph_Result ph_call0_r(int reg, const char* func_name) {
@@ -529,11 +549,13 @@ static inline ph_Result ph_call0_r(int reg, const char* func_name) {
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
@@ -542,7 +564,7 @@ static inline ph_Result ph_call0_r(int reg, const char* func_name) {
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -552,11 +574,13 @@ static inline ph_Result ph_call1_r(int reg, const char* func_name, py_Ref arg0) 
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
@@ -565,7 +589,7 @@ static inline ph_Result ph_call1_r(int reg, const char* func_name, py_Ref arg0) 
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -575,11 +599,13 @@ static inline ph_Result ph_call2_r(int reg, const char* func_name, py_Ref args) 
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
@@ -588,7 +614,7 @@ static inline ph_Result ph_call2_r(int reg, const char* func_name, py_Ref args) 
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -598,11 +624,13 @@ static inline ph_Result ph_call3_r(int reg, const char* func_name, py_Ref args) 
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     py_ItemRef fn = py_getglobal(py_name(func_name));
     if (!fn) {
         py_exception(tp_NameError, "name '%s' is not defined", func_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
@@ -611,7 +639,7 @@ static inline ph_Result ph_call3_r(int reg, const char* func_name, py_Ref args) 
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -621,13 +649,15 @@ static inline ph_Result ph_call_r(int reg, py_Ref callable, int argc, py_Ref arg
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     r.ok = py_call(callable, argc, argv);
     if (r.ok) {
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -637,12 +667,14 @@ static inline ph_Result ph_callmethod0_r(int reg, py_Ref obj, const char* method
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     py_push(obj);
     if (!py_pushmethod(py_name(method_name))) {
         py_pop();
         py_exception(tp_AttributeError, "object has no method '%s'", method_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
@@ -651,7 +683,7 @@ static inline ph_Result ph_callmethod0_r(int reg, py_Ref obj, const char* method
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 
@@ -661,12 +693,14 @@ static inline ph_Result ph_callmethod1_r(int reg, py_Ref obj, const char* method
     r.ok = false;
     r.val = NULL;
 
+    if (!ph__check_reg(reg)) return r;  // Invalid register
+
     ph_Scope scope = ph_scope_begin();
     py_push(obj);
     if (!py_pushmethod(py_name(method_name))) {
         py_pop();
         py_exception(tp_AttributeError, "object has no method '%s'", method_name);
-        ph_scope_end(&scope);
+        ph_scope_end_print(&scope);
         return r;
     }
 
@@ -676,7 +710,7 @@ static inline ph_Result ph_callmethod1_r(int reg, py_Ref obj, const char* method
         py_assign(py_getreg(reg), py_retval());
         r.val = py_getreg(reg);
     }
-    ph_scope_end(&scope);
+    ph_scope_end_print(&scope);
     return r;
 }
 

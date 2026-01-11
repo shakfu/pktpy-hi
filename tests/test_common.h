@@ -1,5 +1,11 @@
 /*
  * test_common.h - Common test utilities
+ *
+ * Each test runs with a clean __main__ namespace to prevent order-dependent
+ * behavior and state leakage between tests.
+ *
+ * Note: pocketpy doesn't support re-initialization after py_finalize(),
+ * so we clear the namespace between tests instead of creating fresh interpreters.
  */
 
 #pragma once
@@ -12,12 +18,29 @@
 static int g_tests_run = 0;
 static int g_tests_passed = 0;
 
+// Clear __main__ namespace to isolate tests
+// Preserves builtins but removes all user-defined names
+static inline void ph_test_reset_namespace(void) {
+    // Get list of names to delete (excluding builtins and dunder names)
+    // Then delete each one
+    ph_exec(
+        "_names_to_del = [n for n in list(globals().keys()) "
+        "if not n.startswith('__') and n != '_names_to_del']\n"
+        "for _n in _names_to_del: del globals()[_n]\n"
+        "del _names_to_del, _n",
+        "<test_reset>"
+    );
+}
+
 #define TEST(name) static void test_##name(void)
 
+// Run a single test with clean namespace
+// Each test starts with a fresh __main__ module state
 #define RUN_TEST(name) do { \
     g_tests_run++; \
     printf("  %-40s ", #name); \
     fflush(stdout); \
+    ph_test_reset_namespace(); \
     test_##name(); \
     g_tests_passed++; \
     printf("[PASS]\n"); \
