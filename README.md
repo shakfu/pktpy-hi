@@ -1,10 +1,31 @@
 # pktpy-hi
 
-A higher-level C wrapper for the [pocketpy](https://github.com/pocketpy/pocketpy) embedded Python interpreter.
+An idea for a higher-level header api wrapper for the [pocketpy](https://github.com/pocketpy/pocketpy) embedded Python interpreter.
+
+**caveat**: this idea was developed with the extensive aid of AI agents.
 
 ## Overview
 
 `pktpy_hi.h` is a thin, header-only wrapper that reduces boilerplate while maintaining full interoperability with the low-level pocketpy API. Both APIs can be used together in the same program.
+
+## Rationale
+
+The pocketpy C-API is a low-level, stack-based interface with ~140 functions. While powerful and flexible, it has several pain points:
+
+| Problem | Impact | Wrapper Solution |
+|---------|--------|------------------|
+| Manual stack management | Easy to corrupt state or forget cleanup | `ph_Scope` with automatic unwinding |
+| `py_OutRef` pattern | Non-idiomatic, requires pre-allocated slots | Return-by-value helpers (`ph_int()`, etc.) |
+| Error handling boilerplate | Easy to forget `py_checkexc()` / `py_clearexc()` | Auto-check in `ph_exec()`, `ph_call*()` |
+| Verbose argument extraction | 3-4 lines per argument in native functions | `PH_ARG_INT(0, x)` one-liner macros |
+| Two binding paradigms | Cognitive load choosing decl vs argc style | Unified `ph_def()` approach |
+
+**Design constraints:**
+
+- **Thin wrapper**: Does not hide the stack model; users can drop to `py_*` when needed
+- **Zero overhead**: All functions are `static inline`
+- **No new abstractions**: Only simplifies existing patterns, adds no new concepts
+- **Header-only**: Single file, no build complexity
 
 ## Features
 
@@ -127,6 +148,3 @@ pktpy-hi/
 - [API Design](docs/api-design.md) - Detailed API documentation
 - [Initial Analysis](docs/initial-analysis.md) - Design rationale
 
-## License
-
-MIT (same as pocketpy)
