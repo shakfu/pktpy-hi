@@ -31,7 +31,9 @@ target_compile_options(pocketpy PRIVATE -w)
 # Examples
 add_executable(basic_usage examples/basic_usage.c $<TARGET_OBJECTS:pocketpy>)
 target_compile_options(basic_usage PRIVATE ${PROJECT_WARNING_FLAGS})
-target_link_libraries(basic_usage m)
+if(NOT MSVC)
+    target_link_libraries(basic_usage PRIVATE m)
+endif()
 
 # Enable testing
 enable_testing()
@@ -43,7 +45,9 @@ set(TEST_DIR ${CMAKE_SOURCE_DIR}/tests)
 function(add_ph_test name)
     add_executable(${name} ${TEST_DIR}/${name}.c $<TARGET_OBJECTS:pocketpy>)
     target_compile_options(${name} PRIVATE ${PROJECT_WARNING_FLAGS})
-    target_link_libraries(${name} m)
+    if(NOT MSVC)
+        target_link_libraries(${name} PRIVATE m)
+    endif()
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 

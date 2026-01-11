@@ -90,6 +90,48 @@ make clean    # Clean build directory
 | Lists | `ph_list_foreach`, `ph_list_from_ints` | List helpers |
 | Debug | `ph_print`, `ph_repr`, `ph_typename` | Debugging utilities |
 
+## Important: Register and Result Lifetime
+
+The wrapper uses pocketpy's global registers for temporary storage. Understanding their lifetime is critical to avoid subtle bugs.
+
+### Value Creation (`ph_int`, `ph_str`, etc.)
+
+These functions all use register `r0`, so each call **overwrites** the previous value:
+
+```c
+// WRONG - b overwrites a
+py_GlobalRef a = ph_int(1);
+py_GlobalRef b = ph_int(2);  // a now points to 2!
+
+// CORRECT - use value immediately
+ph_setglobal("x", ph_int(1));
+ph_setglobal("y", ph_int(2));
+
+// CORRECT - use explicit registers for multiple values
+py_GlobalRef a = ph_int_r(0, 1);  // store in r0
+py_GlobalRef b = ph_int_r(1, 2);  // store in r1 (independent)
+```
+
+### Function Call Results (`ph_call*`)
+
+The base `ph_call*` functions return `py_retval()`, which is overwritten by every Python call:
+
+```c
+// WRONG - r2.val overwrites r1.val
+ph_Result r1 = ph_call0("get_a");
+ph_Result r2 = ph_call0("get_b");  // r1.val is now invalid!
+
+// CORRECT - use _r variants for stable storage
+ph_Result r1 = ph_call0_r(4, "get_a");  // store in r4
+ph_Result r2 = ph_call0_r(5, "get_b");  // store in r5 (independent)
+```
+
+### Available Registers
+
+Registers `r0` through `r7` are available. Convention:
+- `r0-r3`: Used by `ph_int()`, `ph_str()`, etc. (temporary)
+- `r4-r7`: Recommended for user storage when you need multiple stable values
+
 ## Native Function Example
 
 ```c
