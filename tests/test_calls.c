@@ -1,0 +1,155 @@
+/*
+ * test_calls.c - Tests for ph_call* functions
+ *
+ * Demonstrates:
+ * - Calling Python functions from C
+ * - Handling call results with ph_Result
+ * - Calling methods on objects
+ */
+
+#include "test_common.h"
+
+TEST(call0_builtin) {
+    // Call a no-arg function
+    ph_exec("def get_value(): return 42", "<test>");
+
+    ph_Result r = ph_call0("get_value");
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 42);
+}
+
+TEST(call1_simple) {
+    // Call with one argument
+    ph_exec("def double(x): return x * 2", "<test>");
+
+    ph_Result r = ph_call1("double", ph_int(21));
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 42);
+}
+
+TEST(call1_string) {
+    // Call with string argument
+    ph_exec("def greet(name): return 'Hello, ' + name", "<test>");
+
+    ph_Result r = ph_call1("greet", ph_str("World"));
+    ASSERT(r.ok);
+    ASSERT_STR_EQ(py_tostr(r.val), "Hello, World");
+}
+
+TEST(call2_add) {
+    // Call with two arguments (contiguous)
+    ph_exec("def add(a, b): return a + b", "<test>");
+
+    // Arguments must be contiguous - use registers
+    ph_int_r(0, 10);
+    ph_int_r(1, 20);
+
+    ph_Result r = ph_call2("add", py_r0());
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 30);
+}
+
+TEST(call3_sum) {
+    // Call with three arguments
+    ph_exec("def sum3(a, b, c): return a + b + c", "<test>");
+
+    ph_int_r(0, 1);
+    ph_int_r(1, 2);
+    ph_int_r(2, 3);
+
+    ph_Result r = ph_call3("sum3", py_r0());
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 6);
+}
+
+TEST(call_undefined) {
+    // Calling undefined function should fail gracefully
+    ph_Result r = ph_call0("nonexistent_function");
+    ASSERT(!r.ok);
+    ASSERT(!py_checkexc());  // Exception should be cleared
+}
+
+TEST(call_exception) {
+    // Function that raises exception
+    ph_exec("def fail(): raise ValueError('oops')", "<test>");
+
+    ph_Result r = ph_call0("fail");
+    ASSERT(!r.ok);
+    ASSERT(!py_checkexc());
+}
+
+TEST(call_callable_ref) {
+    // Call using a callable reference directly
+    ph_exec("def multiply(a, b): return a * b", "<test>");
+
+    py_ItemRef fn = ph_getglobal("multiply");
+    ASSERT(fn != NULL);
+
+    ph_int_r(0, 6);
+    ph_int_r(1, 7);
+
+    ph_Result r = ph_call(fn, 2, py_r0());
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 42);
+}
+
+TEST(callmethod0_simple) {
+    // Call method with no arguments
+    ph_exec("my_list = [1, 2, 3]", "<test>");
+    py_ItemRef list = ph_getglobal("my_list");
+    ASSERT(list != NULL);
+
+    ph_Result r = ph_callmethod0(list, "copy");
+    ASSERT(r.ok);
+    ASSERT(py_islist(r.val));
+    ASSERT_EQ(py_list_len(r.val), 3);
+}
+
+TEST(callmethod1_append) {
+    // Call method with one argument
+    ph_exec("items = []", "<test>");
+    py_ItemRef items = ph_getglobal("items");
+    ASSERT(items != NULL);
+
+    ph_Result r = ph_callmethod1(items, "append", ph_int(42));
+    ASSERT(r.ok);
+
+    // Verify item was appended
+    ASSERT_EQ(py_list_len(items), 1);
+    ASSERT_EQ(py_toint(py_list_getitem(items, 0)), 42);
+}
+
+TEST(callmethod_string) {
+    // Call string method
+    ph_exec("text = 'hello world'", "<test>");
+    py_ItemRef text = ph_getglobal("text");
+
+    ph_Result r = ph_callmethod0(text, "upper");
+    ASSERT(r.ok);
+    ASSERT_STR_EQ(py_tostr(r.val), "HELLO WORLD");
+}
+
+TEST(callmethod_undefined) {
+    // Calling undefined method should fail
+    ph_exec("obj = 42", "<test>");
+    py_ItemRef obj = ph_getglobal("obj");
+
+    ph_Result r = ph_callmethod0(obj, "nonexistent_method");
+    ASSERT(!r.ok);
+    ASSERT(!py_checkexc());
+}
+
+TEST_SUITE_BEGIN("Function Calls")
+    RUN_TEST(call0_builtin);
+    RUN_TEST(call1_simple);
+    RUN_TEST(call1_string);
+    RUN_TEST(call2_add);
+    RUN_TEST(call3_sum);
+    RUN_TEST(call_undefined);
+    RUN_TEST(call_exception);
+    RUN_TEST(call_callable_ref);
+    RUN_TEST(callmethod0_simple);
+    RUN_TEST(callmethod1_append);
+    RUN_TEST(callmethod_string);
+    RUN_TEST(callmethod_undefined);
+TEST_SUITE_END()

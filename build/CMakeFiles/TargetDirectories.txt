@@ -1,0 +1,14 @@
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/pocketpy.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/basic_usage.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_scope.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_exec.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_values.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_calls.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_binding.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_extraction.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_lists.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test_interop.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/check.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/test.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/edit_cache.dir
+/Users/sa/projects/pktpy-hi/build/CMakeFiles/rebuild_cache.dir

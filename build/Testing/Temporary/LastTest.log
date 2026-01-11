@@ -1,0 +1,258 @@
+Start testing: Jan 11 20:29 +03
+----------------------------------------------------------
+1/8 Testing: test_scope
+1/8 Test: test_scope
+Command: "/Users/sa/projects/pktpy-hi/build/test_scope"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_scope" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== Scope Management ===
+  scope_success                            [PASS]
+  scope_exception                          [PASS]
+  scope_nested_success                     [PASS]
+  scope_nested_inner_fail                  [PASS]
+  scope_end_print                          Traceback (most recent call last):
+  File "<test>", line 1
+    undefined_var
+NameError: name 'undefined_var' is not defined
+[PASS]
+Passed 5/5 tests
+<end of output>
+Test time =   0.37 sec
+----------------------------------------------------------
+Test Passed.
+"test_scope" end time: Jan 11 20:29 +03
+"test_scope" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/8 Testing: test_exec
+2/8 Test: test_exec
+Command: "/Users/sa/projects/pktpy-hi/build/test_exec"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_exec" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== Execution Helpers ===
+  exec_simple                              [PASS]
+  exec_multiline                           [PASS]
+  exec_syntax_error                        Traceback (most recent call last):
+  File "<test>", line 1
+    def bad syntax
+SyntaxError: expected '(', got '@id'
+[PASS]
+  exec_runtime_error                       Traceback (most recent call last):
+  File "<test>", line 1
+    x = undefined_variable
+NameError: name 'undefined_variable' is not defined
+[PASS]
+  eval_simple                              [PASS]
+  eval_expression                          [PASS]
+  eval_string                              [PASS]
+  eval_error                               Traceback (most recent call last):
+  File "<string>", line 1
+    1 / 0
+ZeroDivisionError: float division by zero
+[PASS]
+  exec_in_module                           [PASS]
+  eval_in_module                           [PASS]
+Passed 10/10 tests
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"test_exec" end time: Jan 11 20:29 +03
+"test_exec" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/8 Testing: test_values
+3/8 Test: test_values
+Command: "/Users/sa/projects/pktpy-hi/build/test_values"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_values" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== Value Creation ===
+  create_int                               [PASS]
+  create_int_negative                      [PASS]
+  create_float                             [PASS]
+  create_str                               [PASS]
+  create_str_empty                         [PASS]
+  create_bool_true                         [PASS]
+  create_bool_false                        [PASS]
+  create_with_register                     [PASS]
+  create_str_with_register                 [PASS]
+  create_float_with_register               [PASS]
+  setglobal_with_value                     [PASS]
+  overwrite_register                       [PASS]
+Passed 12/12 tests
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"test_values" end time: Jan 11 20:29 +03
+"test_values" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/8 Testing: test_calls
+4/8 Test: test_calls
+Command: "/Users/sa/projects/pktpy-hi/build/test_calls"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_calls" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== Function Calls ===
+  call0_builtin                            [PASS]
+  call1_simple                             [PASS]
+  call1_string                             [PASS]
+  call2_add                                [PASS]
+  call3_sum                                [PASS]
+  call_undefined                           [PASS]
+  call_exception                           [PASS]
+  call_callable_ref                        [PASS]
+  callmethod0_simple                       [PASS]
+  callmethod1_append                       [PASS]
+  callmethod_string                        [PASS]
+  callmethod_undefined                     [PASS]
+Passed 12/12 tests
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"test_calls" end time: Jan 11 20:29 +03
+"test_calls" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/8 Testing: test_binding
+5/8 Test: test_binding
+Command: "/Users/sa/projects/pktpy-hi/build/test_binding"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_binding" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== Function Binding ===
+  bind_add                                 [PASS]
+  bind_divide                              [PASS]
+  bind_divide_by_zero                      Traceback (most recent call last):
+  File "<string>", line 1
+    c_divide2(1, 0)
+ZeroDivisionError: division by zero
+[PASS]
+  bind_strlen                              [PASS]
+  bind_is_positive                         [PASS]
+  bind_noop                                [PASS]
+  bind_optional_string                     [PASS]
+  bind_optional_int                        [PASS]
+  bind_wrong_argc                          Traceback (most recent call last):
+  File "<string>", line 1
+    c_add2(1)
+TypeError: c_add2() takes 2 positional arguments but 1 were given
+[PASS]
+  bind_wrong_type                          Traceback (most recent call last):
+  File "<string>", line 1
+    c_add3('a', 'b')
+TypeError: expected 'int', got 'str'
+[PASS]
+  setglobal_getglobal                      [PASS]
+  getglobal_undefined                      [PASS]
+  def_in_module                            [PASS]
+Passed 13/13 tests
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"test_binding" end time: Jan 11 20:29 +03
+"test_binding" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/8 Testing: test_extraction
+6/8 Test: test_extraction
+Command: "/Users/sa/projects/pktpy-hi/build/test_extraction"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_extraction" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== Value Extraction ===
+  as_int_valid                             [PASS]
+  as_int_default                           [PASS]
+  as_int_from_float                        [PASS]
+  as_float_valid                           [PASS]
+  as_float_from_int                        [PASS]
+  as_float_default                         [PASS]
+  as_str_valid                             [PASS]
+  as_str_default                           [PASS]
+  as_str_empty                             [PASS]
+  as_bool_true                             [PASS]
+  as_bool_false                            [PASS]
+  as_bool_default                          [PASS]
+  is_truthy_int                            [PASS]
+  is_truthy_str                            [PASS]
+  is_truthy_bool                           [PASS]
+  is_truthy_list                           [PASS]
+  is_none                                  [PASS]
+  is_nil                                   [PASS]
+  extraction_chain                         [PASS]
+Passed 19/19 tests
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Passed.
+"test_extraction" end time: Jan 11 20:29 +03
+"test_extraction" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/8 Testing: test_lists
+7/8 Test: test_lists
+Command: "/Users/sa/projects/pktpy-hi/build/test_lists"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_lists" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== List Helpers ===
+  list_from_ints                           [PASS]
+  list_from_ints_empty                     [PASS]
+  list_from_floats                         [PASS]
+  list_from_strs                           [PASS]
+  list_foreach_sum                         [PASS]
+  list_foreach_early_exit                  [PASS]
+  list_foreach_join                        [PASS]
+  list_foreach_empty                       [PASS]
+  list_in_python                           [PASS]
+  list_mixed_creation                      [PASS]
+Passed 10/10 tests
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"test_lists" end time: Jan 11 20:29 +03
+"test_lists" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/8 Testing: test_interop
+8/8 Test: test_interop
+Command: "/Users/sa/projects/pktpy-hi/build/test_interop"
+Directory: /Users/sa/projects/pktpy-hi/build
+"test_interop" start time: Jan 11 20:29 +03
+Output:
+----------------------------------------------------------
+=== API Interoperability ===
+  mix_exec_styles                          [PASS]
+  mix_value_creation                       [PASS]
+  scope_with_raw_api                       [PASS]
+  ph_result_with_raw_call                  [PASS]
+  dict_with_ph_values                      [PASS]
+  type_creation_interop                    [PASS]
+  hybrid_native_function                   [PASS]
+  error_handling_interop                   [PASS]
+  register_reuse                           [PASS]
+  module_interop                           [PASS]
+Passed 10/10 tests
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"test_interop" end time: Jan 11 20:29 +03
+"test_interop" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jan 11 20:29 +03
