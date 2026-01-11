@@ -139,6 +139,113 @@ TEST(callmethod_undefined) {
     ASSERT(!py_checkexc());
 }
 
+TEST(call0_raise_keeps_exception) {
+    // ph_call0_raise should NOT clear exceptions
+    ph_exec("def raise_error(): raise ValueError('test')", "<test>");
+
+    ph_Result r = ph_call0_raise("raise_error");
+    ASSERT(!r.ok);
+    ASSERT(py_checkexc());  // Exception should still be set
+
+    // Can inspect the exception type
+    ASSERT(py_matchexc(tp_ValueError));
+
+    // Clean up
+    py_clearexc(NULL);
+}
+
+TEST(call0_raise_undefined_keeps_exception) {
+    // Missing function should also keep exception
+    ph_Result r = ph_call0_raise("nonexistent_func");
+    ASSERT(!r.ok);
+    ASSERT(py_checkexc());  // NameError should still be set
+
+    // Can inspect the exception
+    ASSERT(py_matchexc(tp_NameError));
+
+    py_clearexc(NULL);
+}
+
+TEST(call1_raise_success) {
+    // Successful calls should work normally
+    ph_exec("def increment(x): return x + 1", "<test>");
+
+    ph_Result r = ph_call1_raise("increment", ph_int(41));
+    ASSERT(r.ok);
+    ASSERT(!py_checkexc());
+    ASSERT_EQ(py_toint(r.val), 42);
+}
+
+TEST(callmethod_raise_keeps_exception) {
+    // Method calls should also propagate exceptions
+    ph_exec("obj = 42", "<test>");
+    py_ItemRef obj = ph_getglobal("obj");
+
+    ph_Result r = ph_callmethod0_raise(obj, "no_such_method");
+    ASSERT(!r.ok);
+    ASSERT(py_checkexc());  // AttributeError should still be set
+
+    py_clearexc(NULL);
+}
+
+TEST(call_r_preserves_across_calls) {
+    // Key test: _r variants preserve results across multiple calls
+    ph_exec("def get_a(): return 100", "<test>");
+    ph_exec("def get_b(): return 200", "<test>");
+
+    // With base ph_call0, r1.val would be invalidated by second call
+    // With _r variants, each result is in its own register
+    ph_Result r1 = ph_call0_r(4, "get_a");  // Store in r4
+    ph_Result r2 = ph_call0_r(5, "get_b");  // Store in r5
+
+    ASSERT(r1.ok);
+    ASSERT(r2.ok);
+
+    // Both results should still be valid
+    ASSERT_EQ(py_toint(r1.val), 100);
+    ASSERT_EQ(py_toint(r2.val), 200);
+
+    // Verify they're in the expected registers
+    ASSERT(r1.val == py_r4());
+    ASSERT(r2.val == py_r5());
+}
+
+TEST(call1_r_simple) {
+    ph_exec("def square(x): return x * x", "<test>");
+
+    ph_Result r = ph_call1_r(6, "square", ph_int(7));
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 49);
+    ASSERT(r.val == py_getreg(6));
+}
+
+TEST(callmethod_r_simple) {
+    ph_exec("text = 'hello'", "<test>");
+    py_ItemRef text = ph_getglobal("text");
+
+    ph_Result r = ph_callmethod0_r(7, text, "upper");
+    ASSERT(r.ok);
+    ASSERT_STR_EQ(py_tostr(r.val), "HELLO");
+    ASSERT(r.val == py_r7());
+}
+
+TEST(call_r_result_usable_as_arg) {
+    // Result from _r can be safely passed to another call
+    ph_exec("def double(x): return x * 2", "<test>");
+    ph_exec("def add_ten(x): return x + 10", "<test>");
+
+    ph_Result r1 = ph_call1_r(4, "double", ph_int(5));  // 10
+    ASSERT(r1.ok);
+
+    // r1.val is stable, can use it as argument to another call
+    ph_Result r2 = ph_call1_r(5, "add_ten", r1.val);    // 20
+    ASSERT(r2.ok);
+
+    // Both are still valid
+    ASSERT_EQ(py_toint(r1.val), 10);
+    ASSERT_EQ(py_toint(r2.val), 20);
+}
+
 TEST_SUITE_BEGIN("Function Calls")
     RUN_TEST(call0_builtin);
     RUN_TEST(call1_simple);
@@ -152,4 +259,12 @@ TEST_SUITE_BEGIN("Function Calls")
     RUN_TEST(callmethod1_append);
     RUN_TEST(callmethod_string);
     RUN_TEST(callmethod_undefined);
+    RUN_TEST(call0_raise_keeps_exception);
+    RUN_TEST(call0_raise_undefined_keeps_exception);
+    RUN_TEST(call1_raise_success);
+    RUN_TEST(callmethod_raise_keeps_exception);
+    RUN_TEST(call_r_preserves_across_calls);
+    RUN_TEST(call1_r_simple);
+    RUN_TEST(callmethod_r_simple);
+    RUN_TEST(call_r_result_usable_as_arg);
 TEST_SUITE_END()

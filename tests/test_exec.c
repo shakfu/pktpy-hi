@@ -102,6 +102,45 @@ TEST(eval_in_module) {
     ASSERT_EQ(py_toint(py_retval()), 200);
 }
 
+TEST(exec_raise_keeps_exception) {
+    // ph_exec_raise should NOT clear the exception
+    bool ok = ph_exec_raise("1 / 0", "<test>");
+    ASSERT(!ok);
+    ASSERT(py_checkexc());  // Exception should still be set
+
+    // Clean up for subsequent tests
+    py_clearexc(NULL);
+}
+
+TEST(exec_raise_success) {
+    // ph_exec_raise should work normally on success
+    bool ok = ph_exec_raise("raise_test = 123", "<test>");
+    ASSERT(ok);
+    ASSERT(!py_checkexc());
+
+    py_ItemRef result = py_getglobal(py_name("raise_test"));
+    ASSERT(result != NULL);
+    ASSERT_EQ(py_toint(result), 123);
+}
+
+TEST(eval_raise_keeps_exception) {
+    // ph_eval_raise should NOT clear the exception
+    bool ok = ph_eval_raise("undefined_var");
+    ASSERT(!ok);
+    ASSERT(py_checkexc());  // Exception should still be set
+
+    // Clean up
+    py_clearexc(NULL);
+}
+
+TEST(eval_raise_success) {
+    // ph_eval_raise should work normally on success
+    bool ok = ph_eval_raise("10 * 10");
+    ASSERT(ok);
+    ASSERT(!py_checkexc());
+    ASSERT_EQ(py_toint(py_retval()), 100);
+}
+
 TEST_SUITE_BEGIN("Execution Helpers")
     RUN_TEST(exec_simple);
     RUN_TEST(exec_multiline);
@@ -113,4 +152,8 @@ TEST_SUITE_BEGIN("Execution Helpers")
     RUN_TEST(eval_error);
     RUN_TEST(exec_in_module);
     RUN_TEST(eval_in_module);
+    RUN_TEST(exec_raise_keeps_exception);
+    RUN_TEST(exec_raise_success);
+    RUN_TEST(eval_raise_keeps_exception);
+    RUN_TEST(eval_raise_success);
 TEST_SUITE_END()

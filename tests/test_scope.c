@@ -85,10 +85,55 @@ TEST(scope_end_print) {
     ASSERT(!py_checkexc());
 }
 
+TEST(scope_unwinds_stack_on_success) {
+    // Verify that ph_scope_end restores stack even when no exception occurs
+    py_StackRef before = py_peek(0);
+
+    {
+        ph_Scope scope = ph_scope_begin();
+        // Push values onto the stack without popping
+        py_push(ph_int(1));
+        py_push(ph_int(2));
+        py_push(ph_int(3));
+        // Scope should clean up these pushes
+        bool ok = ph_scope_end(&scope);
+        ASSERT(ok);
+    }
+
+    py_StackRef after = py_peek(0);
+    ASSERT(before == after);  // Stack should be restored
+}
+
+TEST(scope_unwinds_nested_on_success) {
+    // Verify nested scopes both unwind correctly
+    py_StackRef before = py_peek(0);
+
+    {
+        ph_Scope outer = ph_scope_begin();
+        py_push(ph_int(100));
+
+        {
+            ph_Scope inner = ph_scope_begin();
+            py_push(ph_int(200));
+            py_push(ph_int(300));
+            ASSERT(ph_scope_end(&inner));
+        }
+
+        // After inner scope, stack should only have the outer push
+        // But outer scope will clean that up too
+        ASSERT(ph_scope_end(&outer));
+    }
+
+    py_StackRef after = py_peek(0);
+    ASSERT(before == after);
+}
+
 TEST_SUITE_BEGIN("Scope Management")
     RUN_TEST(scope_success);
     RUN_TEST(scope_exception);
     RUN_TEST(scope_nested_success);
     RUN_TEST(scope_nested_inner_fail);
     RUN_TEST(scope_end_print);
+    RUN_TEST(scope_unwinds_stack_on_success);
+    RUN_TEST(scope_unwinds_nested_on_success);
 TEST_SUITE_END()

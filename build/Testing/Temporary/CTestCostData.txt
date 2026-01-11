@@ -1,9 +1,0 @@
-test_scope 2 0.187432
-test_exec 2 0.0862143
-test_values 2 0.0659084
-test_calls 2 0.0650538
-test_binding 2 0.0654777
-test_extraction 2 0.129798
-test_lists 2 0.0800988
-test_interop 2 0.0648369
----
