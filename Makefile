@@ -10,7 +10,7 @@ BUILD_DIR := build
 CMAKE := cmake
 CTEST := ctest
 
-.PHONY: all build test clean rebuild configure help
+.PHONY: all build test clean rebuild configure help example example-cpp
 
 # Default target
 all: build
@@ -55,9 +55,13 @@ release:
 run-test: build
 	@cd $(BUILD_DIR) && $(CTEST) -R $(TEST) --verbose
 
-# Run the basic_usage example
+# Run the basic_usage example (C)
 example: build
 	@./$(BUILD_DIR)/basic_usage
+
+# Run the basic_usage_cpp example (C++)
+example-cpp: build
+	@./$(BUILD_DIR)/basic_usage_cpp
 
 # Help
 help:
@@ -71,5 +75,6 @@ help:
 	@echo "  debug        - Build with debug flags"
 	@echo "  release      - Build with release flags"
 	@echo "  run-test     - Run specific test (TEST=name)"
-	@echo "  example      - Run basic_usage example"
+	@echo "  example      - Run basic_usage example (C)"
+	@echo "  example-cpp  - Run basic_usage_cpp example (C++)"
 	@echo "  help         - Show this help message"

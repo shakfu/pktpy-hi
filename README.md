@@ -2,11 +2,11 @@
 
 An idea for a higher-level header api wrapper for the [pocketpy](https://github.com/pocketpy/pocketpy) embedded Python interpreter.
 
-**caveat**: this idea was developed with the extensive aid of AI agents.
+**Caveat**: this idea was developed with the extensive aid of AI agents.
 
 ## Overview
 
-`pktpy_hi.h` is a thin, header-only wrapper that reduces boilerplate while maintaining full interoperability with the low-level pocketpy API. Both APIs can be used together in the same program.
+`pktpy_hi.h` is a thin, c header-only wrapper that reduces boilerplate while maintaining full interoperability with the low-level pocketpy API. Both APIs can be used together in the same program.
 
 ## Rationale
 
