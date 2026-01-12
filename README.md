@@ -6,7 +6,12 @@ An idea for a higher-level header api wrapper for the [pocketpy](https://github.
 
 ## Overview
 
-`pktpy_hi.h` is a thin, c header-only wrapper that reduces boilerplate while maintaining full interoperability with the low-level pocketpy API. Both APIs can be used together in the same program.
+This project provides two header-only wrappers for pocketpy:
+
+- **`pktpy_hi.h`** - C11 wrapper using macros and conventions
+- **`pktpy_hi.hpp`** - C++17 wrapper using RAII, templates, and move semantics
+
+Both reduce boilerplate while maintaining full interoperability with the low-level pocketpy API. All three APIs (C wrapper, C++ wrapper, raw pocketpy) can be used together in the same program.
 
 ## Rationale
 
@@ -72,7 +77,8 @@ make clean    # Clean build directory
 ### Requirements
 
 - CMake 3.14+
-- C11 compiler (GCC, Clang, or MSVC)
+- C11 compiler for C wrapper (GCC, Clang, or MSVC)
+- C++17 compiler for C++ wrapper (GCC 7+, Clang 5+, MSVC 2017+)
 - pocketpy 2.1.6 (included in `pocketpy-2.1.6/`)
 
 ## API Categories
@@ -154,6 +160,63 @@ static bool my_add(int argc, py_StackRef argv) {
 }
 ```
 
+## C++ Wrapper
+
+The C++ wrapper (`pktpy_hi.hpp`) addresses the same pain points using language features instead of conventions:
+
+| C Version Problem | C++ Solution |
+|-------------------|--------------|
+| Must remember `ph_scope_end()` | RAII `ph::Scope` - destructor handles cleanup |
+| Register aliasing bugs at runtime | Move-only `ph::Value` - compile-time prevention |
+| Separate `ph_call0/1/2/3` functions | Overloaded `ph::call()` with type deduction |
+| Macro-based argument extraction | Template-based `ph::arg<T>()` with `std::optional` |
+
+### C++ Quick Start
+
+```cpp
+#include "pktpy_hi.hpp"
+
+int main() {
+    py_initialize();
+
+    // RAII scope - cleanup is automatic
+    {
+        ph::Scope scope;
+        ph::exec("print('Hello from C++!')");
+    }  // stack restored here, no explicit end() needed
+
+    // Move-only values prevent aliasing bugs
+    auto a = ph::Value::integer(10, 0);  // register 0
+    auto b = ph::Value::integer(20, 1);  // register 1
+    // auto c = a;  // WON'T COMPILE - prevents aliasing
+
+    // Type-safe function calls
+    ph::exec("def add(x, y): return x + y");
+    auto result = ph::call("add", a, b);
+    if (result) {
+        printf("Result: %lld\n", py_toint(result.value()));
+    }
+
+    py_finalize();
+    return 0;
+}
+```
+
+### C++ Native Function
+
+```cpp
+static bool my_add(int argc, py_StackRef argv) {
+    PY_CHECK_ARGC(2);
+
+    // Type-safe extraction with std::optional
+    auto a = ph::arg<py_i64>(argv, 0);
+    auto b = ph::arg<py_i64>(argv, 1);
+    if (!a || !b) return false;
+
+    return ph::ret_int(*a + *b);
+}
+```
+
 ## Interoperability
 
 Both APIs work together seamlessly:
@@ -172,12 +235,15 @@ ph_exec("print(my_list)", "<test>");
 ```
 pktpy-hi/
   include/
-    pktpy_hi.h          # The wrapper header (header-only)
+    pktpy_hi.h          # C wrapper header (header-only)
+    pktpy_hi.hpp        # C++ wrapper header (header-only)
   pocketpy-2.1.6/       # Upstream pocketpy
   examples/
-    basic_usage.c       # Usage examples
+    basic_usage.c       # C usage examples
+    basic_usage.cpp     # C++ usage examples
   tests/
-    test_*.c            # Test suites
+    test_*.c            # C test suites
+    test_cpp_wrapper.cpp # C++ test suite
   docs/
     initial-analysis.md # Design rationale
     api-design.md       # API documentation
