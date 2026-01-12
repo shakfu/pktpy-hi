@@ -152,6 +152,7 @@ The same variants exist for `ph_call1/2/3` and `ph_callmethod0/1/2/3`.
 ### Available Registers
 
 Registers `r0` through `r7` are available. Convention:
+
 - `r0`: Used by all `ph_tmp_*()` functions (each call overwrites)
 - `r1-r7`: Available for user storage via `ph_*_r()` functions
 
@@ -179,6 +180,7 @@ static bool my_add(int argc, py_StackRef argv) {
 ```
 
 Available argument macros:
+
 - `PH_ARG_INT(i, var)` - Required int argument
 - `PH_ARG_FLOAT(i, var)` - Required float (accepts int or float)
 - `PH_ARG_STR(i, var)` - Required string
@@ -258,7 +260,7 @@ ph_exec("print(my_list)", "<test>");
 
 ## Project Structure
 
-```
+```text
 pktpy-hi/
   include/
     pktpy_hi.h          # C wrapper header (header-only)
@@ -271,12 +273,13 @@ pktpy-hi/
     test_*.c            # C test suites
     test_cpp_wrapper.cpp # C++ test suite
   docs/
-    api-design.md       # API documentation
+    c-api-design.md     # C API documentation
+    cpp-api-design.md   # C++ API documentation
   CMakeLists.txt        # CMake build
   Makefile              # Frontend makefile
 ```
 
 ## Documentation
 
-- [API Design](docs/api-design.md) - Detailed API documentation
-
+- [C API Design](docs/c-api-design.md) - C wrapper API documentation
+- [C++ API Design](docs/cpp-api-design.md) - C++ wrapper API documentation

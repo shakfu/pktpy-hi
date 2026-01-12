@@ -67,6 +67,7 @@ typedef struct {
 ### Functions
 
 Three variants are provided for ending a scope:
+
 - `ph_scope_end`: Clear exception silently, restore stack
 - `ph_scope_end_print`: Print exception, clear, restore stack (recommended default)
 - `ph_scope_end_raise`: Restore stack but keep exception for propagation
@@ -117,6 +118,7 @@ ph_scope_end_print(&scope);
 Combine scope management with common execution patterns.
 
 Two variants are provided:
+
 - `ph_exec`/`ph_eval`: Print and clear exceptions (fire-and-forget)
 - `ph_exec_raise`/`ph_eval_raise`: Keep exceptions for propagation
 
@@ -159,6 +161,7 @@ static inline bool ph_eval_in_raise(const char* source, py_Ref module);
 The `py_OutRef` pattern is awkward. Provide alternatives that use registers internally.
 
 **IMPORTANT: Register Lifetime Rules**
+
 - `ph_tmp_int()`, `ph_tmp_str()`, `ph_tmp_float()`, `ph_tmp_bool()` all use register r0
 - Each call OVERWRITES the previous value in r0
 - The returned pointer is only valid until the next `ph_*` or `py_*` call
@@ -202,6 +205,7 @@ static inline py_GlobalRef ph_bool_r(int reg, bool val);
 Calling Python functions from C is verbose. Simplify common cases.
 
 Three variants are provided:
+
 - `ph_call*`: Print and clear exceptions (like `ph_exec`), result in volatile `py_retval()`
 - `ph_call*_raise`: Keep exceptions for propagation (caller must handle)
 - `ph_call*_r`: Copy result to specified register (0-7) for stable storage
@@ -550,13 +554,14 @@ static inline const char* ph_typename(py_Ref val);
 
 ## File Organization
 
-```
+```text
 pktpy-hi/
   include/
     pktpy_hi.h          # C wrapper header (header-only)
     pktpy_hi.hpp        # C++ wrapper header (header-only)
   docs/
-    api-design.md       # This design document
+    c-api-design.md     # This document (C API)
+    cpp-api-design.md   # C++ API documentation
   examples/
     basic_usage.c       # C usage examples
     basic_usage.cpp     # C++ usage examples
