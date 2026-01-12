@@ -10,27 +10,27 @@
 #include "test_common.h"
 
 TEST(as_int_valid) {
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
     py_i64 result = ph_as_int(val, -1);
     ASSERT_EQ(result, 42);
 }
 
 TEST(as_int_default) {
     // Non-int returns default
-    py_GlobalRef val = ph_str("not an int");
+    py_GlobalRef val = ph_tmp_str("not an int");
     py_i64 result = ph_as_int(val, -999);
     ASSERT_EQ(result, -999);
 }
 
 TEST(as_int_from_float) {
     // Float should return default (no implicit conversion)
-    py_GlobalRef val = ph_float(3.14);
+    py_GlobalRef val = ph_tmp_float(3.14);
     py_i64 result = ph_as_int(val, -1);
     ASSERT_EQ(result, -1);  // Returns default, not 3
 }
 
 TEST(as_float_valid) {
-    py_GlobalRef val = ph_float(2.718);
+    py_GlobalRef val = ph_tmp_float(2.718);
     py_f64 result = ph_as_float(val, -1.0);
     py_f64 diff = result - 2.718;
     ASSERT(diff > -0.0001 && diff < 0.0001);
@@ -38,59 +38,59 @@ TEST(as_float_valid) {
 
 TEST(as_float_from_int) {
     // Int should be coerced to float
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
     py_f64 result = ph_as_float(val, -1.0);
     py_f64 diff = result - 42.0;
     ASSERT(diff > -0.0001 && diff < 0.0001);
 }
 
 TEST(as_float_default) {
-    py_GlobalRef val = ph_str("not a number");
+    py_GlobalRef val = ph_tmp_str("not a number");
     py_f64 result = ph_as_float(val, -999.0);
     py_f64 diff = result - (-999.0);
     ASSERT(diff > -0.0001 && diff < 0.0001);
 }
 
 TEST(as_str_valid) {
-    py_GlobalRef val = ph_str("hello");
+    py_GlobalRef val = ph_tmp_str("hello");
     const char* result = ph_as_str(val, "default");
     ASSERT_STR_EQ(result, "hello");
 }
 
 TEST(as_str_default) {
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
     const char* result = ph_as_str(val, "default");
     ASSERT_STR_EQ(result, "default");
 }
 
 TEST(as_str_empty) {
-    py_GlobalRef val = ph_str("");
+    py_GlobalRef val = ph_tmp_str("");
     const char* result = ph_as_str(val, "default");
     ASSERT_STR_EQ(result, "");  // Empty string is still valid
 }
 
 TEST(as_bool_true) {
-    py_GlobalRef val = ph_bool(true);
+    py_GlobalRef val = ph_tmp_bool(true);
     bool result = ph_as_bool(val, false);
     ASSERT(result == true);
 }
 
 TEST(as_bool_false) {
-    py_GlobalRef val = ph_bool(false);
+    py_GlobalRef val = ph_tmp_bool(false);
     bool result = ph_as_bool(val, true);
     ASSERT(result == false);
 }
 
 TEST(as_bool_default) {
-    py_GlobalRef val = ph_int(1);  // Not a bool type
+    py_GlobalRef val = ph_tmp_int(1);  // Not a bool type
     bool result = ph_as_bool(val, true);
     ASSERT(result == true);  // Returns default
 }
 
 TEST(is_truthy_int) {
-    ASSERT(ph_is_truthy(ph_int(1)) == true);
-    ASSERT(ph_is_truthy(ph_int(0)) == false);
-    ASSERT(ph_is_truthy(ph_int(-1)) == true);
+    ASSERT(ph_is_truthy(ph_tmp_int(1)) == true);
+    ASSERT(ph_is_truthy(ph_tmp_int(0)) == false);
+    ASSERT(ph_is_truthy(ph_tmp_int(-1)) == true);
 }
 
 TEST(is_truthy_str) {
@@ -103,8 +103,8 @@ TEST(is_truthy_str) {
 }
 
 TEST(is_truthy_bool) {
-    ASSERT(ph_is_truthy(ph_bool(true)) == true);
-    ASSERT(ph_is_truthy(ph_bool(false)) == false);
+    ASSERT(ph_is_truthy(ph_tmp_bool(true)) == true);
+    ASSERT(ph_is_truthy(ph_tmp_bool(false)) == false);
 }
 
 TEST(is_truthy_list) {
@@ -116,6 +116,42 @@ TEST(is_truthy_list) {
 
     ASSERT(ph_is_truthy(empty) == false);
     ASSERT(ph_is_truthy(full) == true);
+}
+
+TEST(is_truthy_raise_success) {
+    // ph_is_truthy_raise returns 1 for truthy, 0 for falsy
+    int result = ph_is_truthy_raise(ph_tmp_int(42));
+    ASSERT(result > 0);
+
+    result = ph_is_truthy_raise(ph_tmp_int(0));
+    ASSERT(result == 0);
+
+    result = ph_is_truthy_raise(ph_str_r(1, "hello"));
+    ASSERT(result > 0);
+
+    result = ph_is_truthy_raise(ph_str_r(2, ""));
+    ASSERT(result == 0);
+}
+
+TEST(is_truthy_raise_exception) {
+    // Create an object with a __bool__ that raises
+    ph_exec(
+        "class BadBool:\n"
+        "    def __bool__(self):\n"
+        "        raise ValueError('bool failed')\n"
+        "bad_obj = BadBool()",
+        "<test>"
+    );
+
+    py_ItemRef bad_obj = ph_getglobal("bad_obj");
+    ASSERT(bad_obj != NULL);
+
+    int result = ph_is_truthy_raise(bad_obj);
+    ASSERT(result < 0);  // -1 indicates error
+    ASSERT(py_checkexc());  // Exception should be set
+    ASSERT(py_matchexc(tp_ValueError));
+
+    py_clearexc(NULL);
 }
 
 TEST(is_none) {
@@ -135,7 +171,7 @@ TEST(is_nil) {
     ASSERT(undefined == NULL);
 
     // Valid value is not nil
-    ph_setglobal("defined_var", ph_int(1));
+    ph_setglobal("defined_var", ph_tmp_int(1));
     py_ItemRef defined = ph_getglobal("defined_var");
     ASSERT(defined != NULL);
     ASSERT(ph_is_nil(defined) == false);
@@ -201,6 +237,8 @@ TEST_SUITE_BEGIN("Value Extraction")
     RUN_TEST(is_truthy_str);
     RUN_TEST(is_truthy_bool);
     RUN_TEST(is_truthy_list);
+    RUN_TEST(is_truthy_raise_success);
+    RUN_TEST(is_truthy_raise_exception);
     RUN_TEST(is_none);
     RUN_TEST(is_nil);
     RUN_TEST(extraction_chain);

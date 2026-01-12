@@ -22,7 +22,7 @@ TEST(call1_simple) {
     // Call with one argument
     ph_exec("def double(x): return x * 2", "<test>");
 
-    ph_Result r = ph_call1("double", ph_int(21));
+    ph_Result r = ph_call1("double", ph_tmp_int(21));
     ASSERT(r.ok);
     ASSERT_EQ(py_toint(r.val), 42);
 }
@@ -31,7 +31,7 @@ TEST(call1_string) {
     // Call with string argument
     ph_exec("def greet(name): return 'Hello, ' + name", "<test>");
 
-    ph_Result r = ph_call1("greet", ph_str("World"));
+    ph_Result r = ph_call1("greet", ph_tmp_str("World"));
     ASSERT(r.ok);
     ASSERT_STR_EQ(py_tostr(r.val), "Hello, World");
 }
@@ -111,7 +111,7 @@ TEST(callmethod1_append) {
     py_ItemRef items = ph_getglobal("items");
     ASSERT(items != NULL);
 
-    ph_Result r = ph_callmethod1(items, "append", ph_int(42));
+    ph_Result r = ph_callmethod1(items, "append", ph_tmp_int(42));
     ASSERT(r.ok);
 
     // Verify item was appended
@@ -170,7 +170,7 @@ TEST(call1_raise_success) {
     // Successful calls should work normally
     ph_exec("def increment(x): return x + 1", "<test>");
 
-    ph_Result r = ph_call1_raise("increment", ph_int(41));
+    ph_Result r = ph_call1_raise("increment", ph_tmp_int(41));
     ASSERT(r.ok);
     ASSERT(!py_checkexc());
     ASSERT_EQ(py_toint(r.val), 42);
@@ -213,7 +213,7 @@ TEST(call_r_preserves_across_calls) {
 TEST(call1_r_simple) {
     ph_exec("def square(x): return x * x", "<test>");
 
-    ph_Result r = ph_call1_r(6, "square", ph_int(7));
+    ph_Result r = ph_call1_r(6, "square", ph_tmp_int(7));
     ASSERT(r.ok);
     ASSERT_EQ(py_toint(r.val), 49);
     ASSERT(r.val == py_getreg(6));
@@ -234,7 +234,7 @@ TEST(call_r_result_usable_as_arg) {
     ph_exec("def double(x): return x * 2", "<test>");
     ph_exec("def add_ten(x): return x + 10", "<test>");
 
-    ph_Result r1 = ph_call1_r(4, "double", ph_int(5));  // 10
+    ph_Result r1 = ph_call1_r(4, "double", ph_tmp_int(5));  // 10
     ASSERT(r1.ok);
 
     // r1.val is stable, can use it as argument to another call
@@ -244,6 +244,85 @@ TEST(call_r_result_usable_as_arg) {
     // Both are still valid
     ASSERT_EQ(py_toint(r1.val), 10);
     ASSERT_EQ(py_toint(r2.val), 20);
+}
+
+TEST(callmethod2_simple) {
+    // Test callmethod with 2 arguments
+    ph_exec("text = 'hello world'", "<test>");
+    py_ItemRef text = ph_getglobal("text");
+
+    ph_Result r = ph_callmethod2(text, "replace",
+        ph_str_r(0, "world"),
+        ph_str_r(1, "universe"));
+    ASSERT(r.ok);
+    ASSERT_STR_EQ(py_tostr(r.val), "hello universe");
+}
+
+TEST(callmethod3_simple) {
+    // Test callmethod with 3 arguments
+    // Use a custom Python class since str.replace in pocketpy may have different signature
+    ph_exec(
+        "class Container:\n"
+        "    def __init__(self, val):\n"
+        "        self.val = val\n"
+        "    def compute(self, a, b, c):\n"
+        "        return self.val + a + b + c\n"
+        "container = Container(100)",
+        "<test>"
+    );
+    py_ItemRef container = ph_getglobal("container");
+
+    ph_Result r = ph_callmethod3(container, "compute",
+        ph_int_r(0, 10),
+        ph_int_r(1, 20),
+        ph_int_r(2, 30));
+    ASSERT(r.ok);
+    ASSERT_EQ(py_toint(r.val), 160);  // 100 + 10 + 20 + 30
+}
+
+TEST(call_r_raise_success) {
+    // _r_raise variant combines stable storage with exception propagation
+    ph_exec("def get_value(): return 42", "<test>");
+
+    ph_Result r = ph_call0_r_raise(4, "get_value");
+    ASSERT(r.ok);
+    ASSERT(!py_checkexc());
+    ASSERT_EQ(py_toint(r.val), 42);
+    ASSERT(r.val == py_r4());
+}
+
+TEST(call_r_raise_exception) {
+    // _r_raise should keep exception set
+    ph_exec("def fail(): raise RuntimeError('test')", "<test>");
+
+    ph_Result r = ph_call0_r_raise(4, "fail");
+    ASSERT(!r.ok);
+    ASSERT(py_checkexc());  // Exception should be set
+    ASSERT(py_matchexc(tp_RuntimeError));
+
+    py_clearexc(NULL);
+}
+
+TEST(callmethod_r_raise_success) {
+    ph_exec("items = ['a', 'b', 'c']", "<test>");
+    py_ItemRef items = ph_getglobal("items");
+
+    ph_Result r = ph_callmethod0_r_raise(5, items, "copy");
+    ASSERT(r.ok);
+    ASSERT(!py_checkexc());
+    ASSERT(py_islist(r.val));
+    ASSERT(r.val == py_r5());
+}
+
+TEST(callmethod_r_raise_exception) {
+    ph_exec("obj = 42", "<test>");
+    py_ItemRef obj = ph_getglobal("obj");
+
+    ph_Result r = ph_callmethod0_r_raise(5, obj, "no_method");
+    ASSERT(!r.ok);
+    ASSERT(py_checkexc());  // AttributeError should be set
+
+    py_clearexc(NULL);
 }
 
 TEST_SUITE_BEGIN("Function Calls")
@@ -257,6 +336,8 @@ TEST_SUITE_BEGIN("Function Calls")
     RUN_TEST(call_callable_ref);
     RUN_TEST(callmethod0_simple);
     RUN_TEST(callmethod1_append);
+    RUN_TEST(callmethod2_simple);
+    RUN_TEST(callmethod3_simple);
     RUN_TEST(callmethod_string);
     RUN_TEST(callmethod_undefined);
     RUN_TEST(call0_raise_keeps_exception);
@@ -267,4 +348,8 @@ TEST_SUITE_BEGIN("Function Calls")
     RUN_TEST(call1_r_simple);
     RUN_TEST(callmethod_r_simple);
     RUN_TEST(call_r_result_usable_as_arg);
+    RUN_TEST(call_r_raise_success);
+    RUN_TEST(call_r_raise_exception);
+    RUN_TEST(callmethod_r_raise_success);
+    RUN_TEST(callmethod_r_raise_exception);
 TEST_SUITE_END()

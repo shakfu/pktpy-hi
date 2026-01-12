@@ -173,7 +173,7 @@ TEST(bind_wrong_type) {
 }
 
 TEST(setglobal_getglobal) {
-    ph_setglobal("test_var", ph_int(12345));
+    ph_setglobal("test_var", ph_tmp_int(12345));
 
     py_ItemRef var = ph_getglobal("test_var");
     ASSERT(var != NULL);

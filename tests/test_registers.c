@@ -48,10 +48,10 @@ TEST(call0_r_invalid_register_too_large) {
 TEST(call1_r_invalid_register) {
     ph_exec("def double(x): return x * 2", "<test>");
 
-    ph_Result r = ph_call1_r(-1, "double", ph_int(5));
+    ph_Result r = ph_call1_r(-1, "double", ph_tmp_int(5));
     ASSERT(!r.ok);
 
-    r = ph_call1_r(8, "double", ph_int(5));
+    r = ph_call1_r(8, "double", ph_tmp_int(5));
     ASSERT(!r.ok);
 }
 
@@ -87,10 +87,10 @@ TEST(call_r_invalid_register) {
     py_ItemRef fn = ph_getglobal("identity");
     ASSERT(fn != NULL);
 
-    ph_Result r = ph_call_r(-1, fn, 1, ph_int(42));
+    ph_Result r = ph_call_r(-1, fn, 1, ph_tmp_int(42));
     ASSERT(!r.ok);
 
-    r = ph_call_r(8, fn, 1, ph_int(42));
+    r = ph_call_r(8, fn, 1, ph_tmp_int(42));
     ASSERT(!r.ok);
 }
 
@@ -111,10 +111,10 @@ TEST(callmethod1_r_invalid_register) {
     py_ItemRef items = ph_getglobal("items");
     ASSERT(items != NULL);
 
-    ph_Result r = ph_callmethod1_r(-1, items, "append", ph_int(42));
+    ph_Result r = ph_callmethod1_r(-1, items, "append", ph_tmp_int(42));
     ASSERT(!r.ok);
 
-    r = ph_callmethod1_r(8, items, "append", ph_int(42));
+    r = ph_callmethod1_r(8, items, "append", ph_tmp_int(42));
     ASSERT(!r.ok);
 }
 

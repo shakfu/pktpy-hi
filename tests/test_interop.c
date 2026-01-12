@@ -28,7 +28,7 @@ TEST(mix_exec_styles) {
 
 TEST(mix_value_creation) {
     // Use ph_int for quick creation
-    py_GlobalRef a = ph_int(100);
+    py_GlobalRef a = ph_tmp_int(100);
 
     // Use py_newint for explicit output
     py_newint(py_r1(), 200);
@@ -52,8 +52,8 @@ TEST(scope_with_raw_api) {
     ph_Scope scope = ph_scope_begin();
 
     // Raw stack manipulation
-    py_push(ph_int(5));
-    py_push(ph_int(10));
+    py_push(ph_tmp_int(5));
+    py_push(ph_tmp_int(10));
 
     // Get values from stack
     py_i64 top = py_toint(py_peek(-1));
@@ -161,7 +161,7 @@ TEST(hybrid_native_function) {
     ph_def("sum_to_n(n)", hybrid_func);
 
     // Call using ph_ helper
-    ph_Result r = ph_call1("sum_to_n", ph_int(10));
+    ph_Result r = ph_call1("sum_to_n", ph_tmp_int(10));
     ASSERT(r.ok);
     ASSERT_EQ(py_toint(r.val), 55);  // 1+2+...+10 = 55
 }
@@ -194,8 +194,8 @@ TEST(register_reuse) {
     // Demonstrate register management between APIs
     // r0-r3 used by ph_ functions, r4-r7 available for user
 
-    py_GlobalRef a = ph_int(1);       // Uses r0
-    py_GlobalRef b = ph_str("test");  // Overwrites r0!
+    py_GlobalRef a = ph_tmp_int(1);       // Uses r0
+    py_GlobalRef b = ph_tmp_str("test");  // Overwrites r0!
 
     // a is now invalid because r0 was reused
     // This is expected behavior - document it
@@ -228,7 +228,7 @@ TEST(module_interop) {
     py_bind(mod, "helper(x)", hybrid_func);
 
     // Add constant with ph_ helper
-    py_setdict(mod, py_name("CONSTANT"), ph_int(42));
+    py_setdict(mod, py_name("CONSTANT"), ph_tmp_int(42));
 
     // Use from Python
     bool ok = ph_exec("import hybrid_mod", "<test>");

@@ -92,9 +92,9 @@ TEST(scope_unwinds_stack_on_success) {
     {
         ph_Scope scope = ph_scope_begin();
         // Push values onto the stack without popping
-        py_push(ph_int(1));
-        py_push(ph_int(2));
-        py_push(ph_int(3));
+        py_push(ph_tmp_int(1));
+        py_push(ph_tmp_int(2));
+        py_push(ph_tmp_int(3));
         // Scope should clean up these pushes
         bool ok = ph_scope_end(&scope);
         ASSERT(ok);
@@ -110,12 +110,12 @@ TEST(scope_unwinds_nested_on_success) {
 
     {
         ph_Scope outer = ph_scope_begin();
-        py_push(ph_int(100));
+        py_push(ph_tmp_int(100));
 
         {
             ph_Scope inner = ph_scope_begin();
-            py_push(ph_int(200));
-            py_push(ph_int(300));
+            py_push(ph_tmp_int(200));
+            py_push(ph_tmp_int(300));
             ASSERT(ph_scope_end(&inner));
         }
 

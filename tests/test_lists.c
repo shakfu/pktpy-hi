@@ -50,6 +50,41 @@ TEST(list_from_strs) {
     ASSERT_STR_EQ(py_tostr(py_list_getitem(py_r0(), 2)), "cherry");
 }
 
+TEST(list_from_bools) {
+    bool values[] = {true, false, true, true, false};
+    ph_list_from_bools(py_r0(), values, 5);
+
+    ASSERT(py_islist(py_r0()));
+    ASSERT_EQ(py_list_len(py_r0()), 5);
+
+    ASSERT(py_tobool(py_list_getitem(py_r0(), 0)) == true);
+    ASSERT(py_tobool(py_list_getitem(py_r0(), 1)) == false);
+    ASSERT(py_tobool(py_list_getitem(py_r0(), 2)) == true);
+    ASSERT(py_tobool(py_list_getitem(py_r0(), 3)) == true);
+    ASSERT(py_tobool(py_list_getitem(py_r0(), 4)) == false);
+}
+
+TEST(list_from_bools_in_python) {
+    // Build bool list in C, use in Python
+    bool values[] = {true, true, false, true};
+    ph_list_from_bools(py_r0(), values, 4);
+    ph_setglobal("bool_list", py_r0());
+
+    // Count true values using len filter instead of sum (pocketpy sum doesn't coerce bool)
+    bool ok = ph_eval("len([x for x in bool_list if x])");
+    ASSERT(ok);
+    ASSERT_EQ(py_toint(py_retval()), 3);  // 3 True values
+
+    // Check all() and any()
+    ok = ph_eval("any(bool_list)");
+    ASSERT(ok);
+    ASSERT(py_tobool(py_retval()) == true);
+
+    ok = ph_eval("all(bool_list)");
+    ASSERT(ok);
+    ASSERT(py_tobool(py_retval()) == false);  // Contains False
+}
+
 // Callback context for sum
 typedef struct {
     py_i64 sum;
@@ -169,6 +204,8 @@ TEST_SUITE_BEGIN("List Helpers")
     RUN_TEST(list_from_ints_empty);
     RUN_TEST(list_from_floats);
     RUN_TEST(list_from_strs);
+    RUN_TEST(list_from_bools);
+    RUN_TEST(list_from_bools_in_python);
     RUN_TEST(list_foreach_sum);
     RUN_TEST(list_foreach_early_exit);
     RUN_TEST(list_foreach_join);

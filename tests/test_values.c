@@ -10,19 +10,19 @@
 #include "test_common.h"
 
 TEST(create_int) {
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
     ASSERT(py_isint(val));
     ASSERT_EQ(py_toint(val), 42);
 }
 
 TEST(create_int_negative) {
-    py_GlobalRef val = ph_int(-12345);
+    py_GlobalRef val = ph_tmp_int(-12345);
     ASSERT(py_isint(val));
     ASSERT_EQ(py_toint(val), -12345);
 }
 
 TEST(create_float) {
-    py_GlobalRef val = ph_float(3.14159);
+    py_GlobalRef val = ph_tmp_float(3.14159);
     ASSERT(py_isfloat(val));
     // Float comparison with tolerance
     py_f64 diff = py_tofloat(val) - 3.14159;
@@ -30,25 +30,25 @@ TEST(create_float) {
 }
 
 TEST(create_str) {
-    py_GlobalRef val = ph_str("hello");
+    py_GlobalRef val = ph_tmp_str("hello");
     ASSERT(py_isstr(val));
     ASSERT_STR_EQ(py_tostr(val), "hello");
 }
 
 TEST(create_str_empty) {
-    py_GlobalRef val = ph_str("");
+    py_GlobalRef val = ph_tmp_str("");
     ASSERT(py_isstr(val));
     ASSERT_STR_EQ(py_tostr(val), "");
 }
 
 TEST(create_bool_true) {
-    py_GlobalRef val = ph_bool(true);
+    py_GlobalRef val = ph_tmp_bool(true);
     ASSERT(py_isbool(val));
     ASSERT(py_tobool(val) == true);
 }
 
 TEST(create_bool_false) {
-    py_GlobalRef val = ph_bool(false);
+    py_GlobalRef val = ph_tmp_bool(false);
     ASSERT(py_isbool(val));
     ASSERT(py_tobool(val) == false);
 }
@@ -89,8 +89,8 @@ TEST(create_float_with_register) {
 
 TEST(setglobal_with_value) {
     // Combine value creation with setting globals
-    ph_setglobal("my_num", ph_int(999));
-    ph_setglobal("my_text", ph_str("test string"));
+    ph_setglobal("my_num", ph_tmp_int(999));
+    ph_setglobal("my_text", ph_tmp_str("test string"));
 
     bool ok = ph_eval("my_num + 1");
     ASSERT(ok);
@@ -103,10 +103,10 @@ TEST(setglobal_with_value) {
 
 TEST(overwrite_register) {
     // Creating a new value in r0 overwrites previous
-    ph_int(100);
+    ph_tmp_int(100);
     py_i64 first = py_toint(py_r0());
 
-    ph_int(200);
+    ph_tmp_int(200);
     py_i64 second = py_toint(py_r0());
 
     ASSERT_EQ(first, 100);

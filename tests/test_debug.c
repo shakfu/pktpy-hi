@@ -13,28 +13,28 @@
  * ============================================================================ */
 
 TEST(typename_int) {
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
     const char* name = ph_typename(val);
     ASSERT_STR_EQ(name, "int");
     ASSERT(!py_checkexc());
 }
 
 TEST(typename_float) {
-    py_GlobalRef val = ph_float(3.14);
+    py_GlobalRef val = ph_tmp_float(3.14);
     const char* name = ph_typename(val);
     ASSERT_STR_EQ(name, "float");
     ASSERT(!py_checkexc());
 }
 
 TEST(typename_str) {
-    py_GlobalRef val = ph_str("hello");
+    py_GlobalRef val = ph_tmp_str("hello");
     const char* name = ph_typename(val);
     ASSERT_STR_EQ(name, "str");
     ASSERT(!py_checkexc());
 }
 
 TEST(typename_bool) {
-    py_GlobalRef val = ph_bool(true);
+    py_GlobalRef val = ph_tmp_bool(true);
     const char* name = ph_typename(val);
     ASSERT_STR_EQ(name, "bool");
     ASSERT(!py_checkexc());
@@ -86,21 +86,21 @@ TEST(typename_custom_class) {
  * ============================================================================ */
 
 TEST(repr_int) {
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
     const char* repr = ph_repr(val);
     ASSERT_STR_EQ(repr, "42");
     ASSERT(!py_checkexc());
 }
 
 TEST(repr_negative_int) {
-    py_GlobalRef val = ph_int(-123);
+    py_GlobalRef val = ph_tmp_int(-123);
     const char* repr = ph_repr(val);
     ASSERT_STR_EQ(repr, "-123");
     ASSERT(!py_checkexc());
 }
 
 TEST(repr_float) {
-    py_GlobalRef val = ph_float(3.5);
+    py_GlobalRef val = ph_tmp_float(3.5);
     const char* repr = ph_repr(val);
     // Float repr may vary, just check it's not the fallback
     ASSERT(strcmp(repr, "<repr failed>") != 0);
@@ -108,14 +108,14 @@ TEST(repr_float) {
 }
 
 TEST(repr_str) {
-    py_GlobalRef val = ph_str("hello");
+    py_GlobalRef val = ph_tmp_str("hello");
     const char* repr = ph_repr(val);
     ASSERT_STR_EQ(repr, "'hello'");
     ASSERT(!py_checkexc());
 }
 
 TEST(repr_str_with_quotes) {
-    py_GlobalRef val = ph_str("it's");
+    py_GlobalRef val = ph_tmp_str("it's");
     const char* repr = ph_repr(val);
     // Should escape or use double quotes
     ASSERT(strcmp(repr, "<repr failed>") != 0);
@@ -123,14 +123,14 @@ TEST(repr_str_with_quotes) {
 }
 
 TEST(repr_bool_true) {
-    py_GlobalRef val = ph_bool(true);
+    py_GlobalRef val = ph_tmp_bool(true);
     const char* repr = ph_repr(val);
     ASSERT_STR_EQ(repr, "True");
     ASSERT(!py_checkexc());
 }
 
 TEST(repr_bool_false) {
-    py_GlobalRef val = ph_bool(false);
+    py_GlobalRef val = ph_tmp_bool(false);
     const char* repr = ph_repr(val);
     ASSERT_STR_EQ(repr, "False");
     ASSERT(!py_checkexc());
@@ -225,7 +225,7 @@ TEST(repr_failing_repr_method) {
 
 TEST(print_int) {
     py_StackRef stack_before = py_peek(0);
-    py_GlobalRef val = ph_int(42);
+    py_GlobalRef val = ph_tmp_int(42);
 
     ph_print(val);
 
@@ -238,7 +238,7 @@ TEST(print_int) {
 
 TEST(print_str) {
     py_StackRef stack_before = py_peek(0);
-    py_GlobalRef val = ph_str("hello world");
+    py_GlobalRef val = ph_tmp_str("hello world");
 
     ph_print(val);
 
@@ -311,7 +311,7 @@ TEST(print_none) {
 TEST(multiple_repr_calls) {
     // Verify multiple calls don't accumulate state
     for (int i = 0; i < 10; i++) {
-        py_GlobalRef val = ph_int(i);
+        py_GlobalRef val = ph_tmp_int(i);
         const char* repr = ph_repr(val);
         ASSERT(strcmp(repr, "<repr failed>") != 0);
         ASSERT(!py_checkexc());
@@ -320,10 +320,10 @@ TEST(multiple_repr_calls) {
 
 TEST(multiple_typename_calls) {
     // Verify multiple calls work correctly
-    ASSERT_STR_EQ(ph_typename(ph_int(1)), "int");
-    ASSERT_STR_EQ(ph_typename(ph_str("x")), "str");
-    ASSERT_STR_EQ(ph_typename(ph_float(1.0)), "float");
-    ASSERT_STR_EQ(ph_typename(ph_bool(true)), "bool");
+    ASSERT_STR_EQ(ph_typename(ph_tmp_int(1)), "int");
+    ASSERT_STR_EQ(ph_typename(ph_tmp_str("x")), "str");
+    ASSERT_STR_EQ(ph_typename(ph_tmp_float(1.0)), "float");
+    ASSERT_STR_EQ(ph_typename(ph_tmp_bool(true)), "bool");
     ASSERT(!py_checkexc());
 }
 
@@ -333,7 +333,7 @@ TEST(debug_helpers_no_stack_leak) {
 
     // Call all helpers multiple times
     for (int i = 0; i < 5; i++) {
-        py_GlobalRef val = ph_int(i * 10);
+        py_GlobalRef val = ph_tmp_int(i * 10);
 
         ph_typename(val);
         ph_repr(val);

@@ -18,10 +18,16 @@ A thin, header-only wrapper over pocketpy's C-API that reduces boilerplate while
 // pktpy_hi.h - Higher-level pocketpy wrapper
 #pragma once
 
+/* Version information */
+#define PH_VERSION_MAJOR 0
+#define PH_VERSION_MINOR 2
+#define PH_VERSION_PATCH 0
+#define PH_VERSION_STRING "0.2.0"
+
 #define PK_IS_PUBLIC_INCLUDE
 #include "pocketpy.h"
 #include <stdbool.h>
-#include <assert.h>
+#include <stddef.h>  /* for ptrdiff_t */
 
 #ifdef __cplusplus
 extern "C" {
@@ -153,18 +159,18 @@ static inline bool ph_eval_in_raise(const char* source, py_Ref module);
 The `py_OutRef` pattern is awkward. Provide alternatives that use registers internally.
 
 **IMPORTANT: Register Lifetime Rules**
-- `ph_int()`, `ph_str()`, `ph_float()`, `ph_bool()` all use register r0
+- `ph_tmp_int()`, `ph_tmp_str()`, `ph_tmp_float()`, `ph_tmp_bool()` all use register r0
 - Each call OVERWRITES the previous value in r0
 - The returned pointer is only valid until the next `ph_*` or `py_*` call
 
 ```c
 // WRONG - second call invalidates first result:
-py_GlobalRef a = ph_int(1);
-py_GlobalRef b = ph_int(2);  // a now points to 2!
+py_GlobalRef a = ph_tmp_int(1);
+py_GlobalRef b = ph_tmp_int(2);  // a now points to 2!
 
 // CORRECT - use immediately:
-ph_setglobal("x", ph_int(1));
-ph_setglobal("y", ph_int(2));
+ph_setglobal("x", ph_tmp_int(1));
+ph_setglobal("y", ph_tmp_int(2));
 
 // CORRECT - use explicit registers for multiple values:
 py_GlobalRef a = ph_int_r(0, 1);
@@ -176,13 +182,13 @@ py_GlobalRef b = ph_int_r(1, 2);  // a and b are independent
 ```c
 // Create values using py_r0() - convenience for quick value creation
 // WARNING: Returns r0 which is overwritten by subsequent ph_* calls
-static inline py_GlobalRef ph_int(py_i64 val);
-static inline py_GlobalRef ph_float(py_f64 val);
-static inline py_GlobalRef ph_str(const char* val);
-static inline py_GlobalRef ph_bool(bool val);
+static inline py_GlobalRef ph_tmp_int(py_i64 val);
+static inline py_GlobalRef ph_tmp_float(py_f64 val);
+static inline py_GlobalRef ph_tmp_str(const char* val);
+static inline py_GlobalRef ph_tmp_bool(bool val);
 
 // Create into a specific register (0-7)
-// Asserts on invalid register index (programming error)
+// Returns NULL if register index is invalid
 static inline py_GlobalRef ph_int_r(int reg, py_i64 val);
 static inline py_GlobalRef ph_float_r(int reg, py_f64 val);
 static inline py_GlobalRef ph_str_r(int reg, const char* val);
@@ -235,6 +241,12 @@ static inline ph_Result ph_callmethod0(py_Ref obj, const char* method_name);
 
 // Call a method on an object with 1 argument
 static inline ph_Result ph_callmethod1(py_Ref obj, const char* method_name, py_Ref arg0);
+
+// Call a method on an object with 2 arguments
+static inline ph_Result ph_callmethod2(py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1);
+
+// Call a method on an object with 3 arguments
+static inline ph_Result ph_callmethod3(py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1, py_Ref arg2);
 ```
 
 ### Propagating Variants (keep exceptions)
@@ -248,6 +260,8 @@ static inline ph_Result ph_call3_raise(const char* func_name, py_Ref args);
 static inline ph_Result ph_call_raise(py_Ref callable, int argc, py_Ref argv);
 static inline ph_Result ph_callmethod0_raise(py_Ref obj, const char* method_name);
 static inline ph_Result ph_callmethod1_raise(py_Ref obj, const char* method_name, py_Ref arg0);
+static inline ph_Result ph_callmethod2_raise(py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1);
+static inline ph_Result ph_callmethod3_raise(py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1, py_Ref arg2);
 ```
 
 ### Register-Backed Variants (stable result storage)
@@ -263,6 +277,24 @@ static inline ph_Result ph_call3_r(int reg, const char* func_name, py_Ref args);
 static inline ph_Result ph_call_r(int reg, py_Ref callable, int argc, py_Ref argv);
 static inline ph_Result ph_callmethod0_r(int reg, py_Ref obj, const char* method_name);
 static inline ph_Result ph_callmethod1_r(int reg, py_Ref obj, const char* method_name, py_Ref arg0);
+static inline ph_Result ph_callmethod2_r(int reg, py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1);
+static inline ph_Result ph_callmethod3_r(int reg, py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1, py_Ref arg2);
+```
+
+### Register-Backed + Propagating Variants (stable storage + keep exceptions)
+
+All `_r_raise` variants combine stable register storage with exception propagation.
+
+```c
+static inline ph_Result ph_call0_r_raise(int reg, const char* func_name);
+static inline ph_Result ph_call1_r_raise(int reg, const char* func_name, py_Ref arg0);
+static inline ph_Result ph_call2_r_raise(int reg, const char* func_name, py_Ref args);
+static inline ph_Result ph_call3_r_raise(int reg, const char* func_name, py_Ref args);
+static inline ph_Result ph_call_r_raise(int reg, py_Ref callable, int argc, py_Ref argv);
+static inline ph_Result ph_callmethod0_r_raise(int reg, py_Ref obj, const char* method_name);
+static inline ph_Result ph_callmethod1_r_raise(int reg, py_Ref obj, const char* method_name, py_Ref arg0);
+static inline ph_Result ph_callmethod2_r_raise(int reg, py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1);
+static inline ph_Result ph_callmethod3_r_raise(int reg, py_Ref obj, const char* method_name, py_Ref arg0, py_Ref arg1, py_Ref arg2);
 ```
 
 ### Usage Example
@@ -308,6 +340,10 @@ static inline bool ph_as_bool(py_Ref val, bool default_val);
 
 // Check if value is truthy (handles exceptions internally)
 static inline bool ph_is_truthy(py_Ref val);
+
+// Check if value is truthy (propagates exceptions)
+// Returns: 1 for truthy, 0 for falsy, -1 for error (exception set)
+static inline int ph_is_truthy_raise(py_Ref val);
 
 // Check if value is None
 static inline bool ph_is_none(py_Ref val);
@@ -359,6 +395,9 @@ Macros to simplify argument extraction in `py_CFunction` implementations.
 
 // Get argument as bool
 #define PH_ARG_BOOL(i, var)
+
+// Get raw py_Ref argument (no type checking)
+#define PH_ARG_REF(i, var)
 ```
 
 ### Optional Arguments
@@ -451,6 +490,9 @@ static inline void ph_list_from_floats(py_OutRef out, const py_f64* vals, int co
 
 // Build a list from C array of strings
 static inline void ph_list_from_strs(py_OutRef out, const char** vals, int count);
+
+// Build a list from C array of bools
+static inline void ph_list_from_bools(py_OutRef out, const bool* vals, int count);
 ```
 
 ---
@@ -486,39 +528,42 @@ static inline const char* ph_typename(py_Ref val);
 
 | Category | Functions | Key Benefit |
 |----------|-----------|-------------|
-| Constants | `PH_MAX_REG` | Register bounds (8) |
+| Constants | `PH_MAX_REG`, `PH_VERSION_*` | Register bounds, version info |
 | Scope Management | `ph_scope_begin/end/end_print/end_raise` | Automatic stack cleanup |
-| Safe Execution | `ph_exec`, `ph_eval`, `*_raise` variants | One-liner execution with error handling |
-| Value Creation | `ph_int`, `ph_str`, `*_r` variants | Return-by-value instead of out-params |
-| Function Calls | `ph_call0/1/2/3`, `*_raise`, `*_r` variants | Safe calls with result struct |
-| Value Extraction | `ph_as_int`, `ph_is_truthy`, `ph_is_none` | Safe extraction with defaults |
-| Binding | `ph_def`, `ph_setglobal`, `ph_module` | Simplified function binding |
-| Arg Macros | `PH_ARG_INT`, `PH_ARG_*_OPT`, `PH_RETURN_*` | Reduce native function boilerplate |
-| List Helpers | `ph_list_foreach`, `ph_list_from_*` | List creation and iteration |
+| Safe Execution | `ph_exec`, `ph_eval`, `*_in`, `*_raise` variants | One-liner execution with error handling |
+| Value Creation | `ph_tmp_int/float/str/bool`, `ph_*_r` variants | Return-by-value instead of out-params |
+| Function Calls | `ph_call0/1/2/3`, `ph_callmethod0/1/2/3`, `*_raise`, `*_r`, `*_r_raise` | Safe calls with result struct |
+| Value Extraction | `ph_as_int/float/str/bool`, `ph_is_truthy/_raise`, `ph_is_none/nil` | Safe extraction with defaults |
+| Binding | `ph_def`, `ph_def_in`, `ph_setglobal`, `ph_getglobal`, `ph_module` | Simplified function binding |
+| Arg Macros | `PH_ARG_INT/FLOAT/STR/BOOL/REF`, `PH_ARG_*_OPT`, `PH_RETURN_*` | Reduce native function boilerplate |
+| List Helpers | `ph_list_foreach`, `ph_list_from_ints/floats/strs/bools` | List creation and iteration |
 | Debug | `ph_print`, `ph_repr`, `ph_typename` | Quick debugging helpers |
 
 ## What This Wrapper Does NOT Do
 
 - Does not hide the stack model (users can still use `py_push`/`py_pop`)
 - Does not manage object lifetimes beyond scope cleanup
-- Does not provide a C++ API (this is pure C)
 - Does not add features not in the underlying API
 - Does not replace the low-level API (both work together)
+
+**Note:** A separate C++ wrapper (`pktpy_hi.hpp`) is also provided with RAII, templates, and move semantics.
 
 ## File Organization
 
 ```
 pktpy-hi/
   include/
-    pktpy_hi.h          # The wrapper header (header-only)
+    pktpy_hi.h          # C wrapper header (header-only)
+    pktpy_hi.hpp        # C++ wrapper header (header-only)
   docs/
-    initial-analysis.md # Design rationale
     api-design.md       # This design document
   examples/
-    basic_usage.c       # Example using the wrapper
+    basic_usage.c       # C usage examples
+    basic_usage.cpp     # C++ usage examples
   tests/
     test_scope.c        # Test scope management
     test_calls.c        # Test function calls
     test_registers.c    # Test register bounds checking
+    test_cpp_wrapper.cpp # C++ wrapper tests
     ...
 ```

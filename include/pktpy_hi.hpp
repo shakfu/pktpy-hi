@@ -1,13 +1,13 @@
 /*
  * pktpy_hi.hpp - C++ wrapper for pocketpy C-API
  *
- * A modern C++ wrapper using RAII, templates, and move semantics to provide
- * a safer, more ergonomic interface than the C version.
+ * A modern C++17 wrapper using RAII, templates, and move semantics to provide
+ * a safe, ergonomic interface to pocketpy.
  *
- * Key improvements over C version:
- * - RAII scope management (impossible to forget cleanup)
+ * Key features:
+ * - RAII scope management (automatic cleanup, even on exceptions)
  * - Move-only Value type (prevents register aliasing bugs at compile time)
- * - Variadic templates (single call<>() instead of call0/call1/call2/call3)
+ * - Variadic templates for function calls
  * - std::optional for safe argument extraction
  * - Type-safe result handling
  *
@@ -42,8 +42,7 @@ enum class ExcPolicy {
 // ============================================================================
 //
 // The Scope class automatically handles stack unwinding and exception cleanup.
-// Unlike the C version where you must remember to call ph_scope_end(), the
-// destructor guarantees cleanup even on early returns or exceptions.
+// The destructor guarantees cleanup even on early returns or exceptions.
 //
 // Usage:
 //   {
@@ -142,16 +141,19 @@ public:
 // 4. Move-Only Value Type
 // ============================================================================
 //
-// The C version has a critical footgun: register aliasing.
-//   py_GlobalRef a = ph_int(1);
-//   py_GlobalRef b = ph_int(2);  // a is now corrupted!
+// pocketpy uses global registers (r0-r7) for temporary storage. A common bug
+// is register aliasing - storing a register pointer, then overwriting it:
 //
-// The C++ Value type prevents this at compile time by being move-only.
+//   py_newint(py_r0(), 1);
+//   py_GlobalRef a = py_r0();
+//   py_newint(py_r0(), 2);  // a now points to 2, not 1!
+//
+// The Value type prevents this at compile time by being move-only.
 // Copying is deleted, so you can't accidentally alias registers.
 //
 // Usage:
-//   auto a = ph::Value::integer(1);      // owns register
-//   auto b = ph::Value::integer(2);      // different register
+//   auto a = ph::Value::integer(1, 0);   // owns register 0
+//   auto b = ph::Value::integer(2, 1);   // owns register 1
 //   auto c = std::move(a);               // transfer ownership
 //   // a is now empty, c owns the value
 //
@@ -304,11 +306,9 @@ inline Result<py_GlobalRef> eval_in(const char* source, py_Ref module,
 // 6. Function Calls (Variadic Templates)
 // ============================================================================
 //
-// The C version requires separate functions: ph_call0, ph_call1, ph_call2, etc.
-// The C++ version uses variadic templates for a single call<>() function.
-//
-// Limitation: Variadic call supports up to 4 arguments. For more arguments,
-// use the explicit argument array overload or call methods directly.
+// Variadic templates provide a unified interface for calling Python functions
+// with any number of arguments (up to 4). For more arguments, use the explicit
+// argument array overload or call methods directly.
 //
 // Usage:
 //   ph::call("print", ph::Value::string("hello", 0));
@@ -571,8 +571,8 @@ inline py_GlobalRef module(const char* path) {
 // 8. Type-Safe Argument Extraction
 // ============================================================================
 //
-// The C version uses macros (PH_ARG_INT, etc.) that are error-prone.
-// The C++ version uses templates with std::optional for type-safe extraction.
+// Templates with std::optional provide type-safe argument extraction in
+// native functions.
 //
 // Usage in native function:
 //   auto x = ph::arg<py_i64>(argv, 0);

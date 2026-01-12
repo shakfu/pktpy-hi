@@ -50,8 +50,8 @@ int main(void) {
 
     // --- Value creation example ---
     printf("\n=== Value Creation ===\n");
-    ph_setglobal("my_int", ph_int(42));
-    ph_setglobal("my_str", ph_str("hello"));
+    ph_setglobal("my_int", ph_tmp_int(42));
+    ph_setglobal("my_str", ph_tmp_str("hello"));
     ph_exec("print(f'my_int = {my_int}, my_str = {my_str}')", "<test>");
 
     // Using different registers
@@ -71,7 +71,7 @@ int main(void) {
     printf("\n=== Calling Python from C ===\n");
     ph_exec("def double(x): return x * 2", "<test>");
 
-    ph_Result r = ph_call1("double", ph_int(21));
+    ph_Result r = ph_call1("double", ph_tmp_int(21));
     if (r.ok) {
         printf("double(21) = %lld\n", py_toint(r.val));
     }
@@ -91,7 +91,7 @@ int main(void) {
     }
 
     // Default value when type doesn't match
-    py_i64 y = ph_as_int(ph_str("not an int"), 999);
+    py_i64 y = ph_as_int(ph_tmp_str("not an int"), 999);
     printf("ph_as_int on string = %lld (default)\n", y);
 
     // --- Debug helpers ---
